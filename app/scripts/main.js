@@ -47,6 +47,7 @@
     var qrcodeIgnore = root.querySelector(".QRCodeSuccessDialog-ignore");
 
     var client = new QRClient();
+    var qrWorker = new Worker('scripts/jsqrcode/qrworker.js');
 
     var self = this;
 
@@ -56,12 +57,29 @@
     this.detectQRCode = function(imageData, callback) {
       callback = callback || function() {};
 
-      client.decode(imageData, function(result) {
-        if(result !== undefined) {
+      // client.decode(imageData, function(result) {
+      //   if(result !== undefined) {
+      //     self.currentUrl = result;
+      //   }
+      //   callback(result);
+      // });
+
+      qrWorker.postMessage(imageData);
+      
+      qrWorker.onmessage = function (e) {
+        var result = e.data;
+        if (result !== undefined) {
           self.currentUrl = result;
         }
         callback(result);
-      });
+      };
+      qrWorker.onerror = function (err) {
+        function WorkerException(message) {
+          this.name = "WorkerException";
+          this.message = message;
+        }
+        throw new WorkerException('Decoder error');
+      };
     };
 
     this.showDialog = function(url) {
